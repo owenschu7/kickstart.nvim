@@ -1,5 +1,28 @@
---[[
+vim.opt.tabstop = 4 -- Number of spaces a tab character represents
+vim.opt.shiftwidth = 4 -- Number of spaces to use for autoindent
+vim.opt.softtabstop = 4 -- Number of spaces a <Tab> counts for when editing
+vim.opt.expandtab = true -- Convert tabs to spaces
 
+-- Automatically save and load folds
+vim.opt.viewoptions:remove 'options' -- only save folds, not other settings
+vim.cmd [[
+  augroup remember_folds
+    autocmd!
+    autocmd BufWinLeave * silent! mkview
+    autocmd BufWinEnter * silent! loadview
+  augroup END
+]]
+
+vim.opt.foldmethod = 'indent'
+vim.opt.foldcolumn = '1'
+
+-- claude - for opening terminal with current directory
+vim.api.nvim_create_user_command('Term', function()
+  local dir = vim.fn.expand '%:p:h'
+  vim.fn.system('kitty --working-directory=' .. dir .. ' &')
+end, {})
+
+--[[
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
