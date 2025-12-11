@@ -22,6 +22,8 @@ vim.api.nvim_create_user_command('Term', function()
   vim.fn.system('kitty --working-directory=' .. dir .. ' &')
 end, {})
 
+-- The code above this line are my custom configuration for neovim everything below is kickstart
+
 --[[
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
