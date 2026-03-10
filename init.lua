@@ -13,8 +13,13 @@ vim.cmd [[
   augroup END
 ]]
 
+-- folds
 vim.opt.foldmethod = 'indent'
 vim.opt.foldcolumn = '1'
+
+vim.opt.foldenable = true -- Ensures folding is still allowed
+vim.opt.foldlevel = 99 -- Keeps all folds open in the current window
+vim.opt.foldlevelstart = 99 -- Tells Neovim to start with all folds open when
 
 -- claude - for opening terminal with current directory using :Term
 vim.api.nvim_create_user_command('Term', function()
@@ -696,7 +701,7 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -760,6 +765,21 @@ require('lazy').setup({
       }
     end,
   },
+  ----lsp auto fill fuctions
+  --{
+  --  'ray-x/lsp_signature.nvim',
+  --  event = 'VeryLazy',
+  --  opts = {
+  --    bind = true,
+  --    handler_opts = {
+  --      border = 'rounded',
+  --    },
+  --  },
+  --  config = function(_, opts)
+  --    require('lsp_signature').setup(opts)
+  --  end,
+  --},
+  --end auto fill funcitons
 
   { -- Autoformat
     'stevearc/conform.nvim',
@@ -989,6 +1009,47 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  --plugins
+  --autopairs
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true,
+  },
+
+  --harpoon
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local harpoon = require 'harpoon'
+      harpoon:setup()
+
+      -- Basic keymaps
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+      end, { desc = '[A]dd to Harpoon' })
+      vim.keymap.set('n', '<leader>m', function()
+        harpoon.ui:toggle_quick_menu(harpoon:list())
+      end, { desc = 'Toggle Harpoon menu' })
+
+      -- Jump to files 1-4 instantly
+      vim.keymap.set('n', '<C-1>', function()
+        harpoon:list():select(1)
+      end)
+      vim.keymap.set('n', '<C-2>', function()
+        harpoon:list():select(2)
+      end)
+      vim.keymap.set('n', '<C-3>', function()
+        harpoon:list():select(3)
+      end)
+      vim.keymap.set('n', '<C-4>', function()
+        harpoon:list():select(4)
+      end)
+    end,
+  },
+
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -1002,7 +1063,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
