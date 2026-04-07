@@ -27,7 +27,50 @@ vim.api.nvim_create_user_command('Term', function()
   vim.fn.system('kitty --working-directory=' .. dir .. ' &')
 end, {})
 
--- The code above this line are my custom configuration for neovim everything below is kickstart ahhh
+-- start gemini code
+-- creates a terminal on botton of screen using control t
+--
+-- Create variables to track the terminal buffer and window
+local term_buf = nil
+local term_win = nil
+
+-- Smart Toggle: Press <C-t> to open, jump to, or leave the terminal
+vim.keymap.set({ 'n', 't' }, '<C-t>', function()
+  -- If we are already inside the terminal window, leave it open and jump back to the text
+  if term_win and vim.api.nvim_win_is_valid(term_win) and vim.api.nvim_get_current_win() == term_win then
+    vim.cmd 'wincmd p' -- Jump to previous window
+    return
+  end
+
+  -- If the terminal window is open but we are in the text editor, jump back to the terminal
+  if term_win and vim.api.nvim_win_is_valid(term_win) then
+    vim.api.nvim_set_current_win(term_win)
+    vim.cmd 'startinsert'
+    return
+  end
+
+  -- If the window is closed, create a new split
+  vim.cmd 'botright 10split'
+  term_win = vim.api.nvim_get_current_win()
+
+  -- If the terminal process is still running in the background, reattach it
+  if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
+    vim.api.nvim_win_set_buf(term_win, term_buf)
+  else
+    -- Otherwise, start a brand new fish terminal
+    vim.cmd 'terminal fish'
+    term_buf = vim.api.nvim_get_current_buf()
+  end
+
+  vim.cmd 'startinsert'
+end, { noremap = true, silent = true, desc = 'Toggle fish terminal' })
+
+-- Close Command: Press <C-x> to completely kill the terminal from inside it
+vim.keymap.set('t', '<C-x>', function()
+  vim.cmd 'bd!' -- Force delete the buffer
+end, { noremap = true, silent = true, desc = 'Close terminal completely' }) -- The code above this line are my custom configuration for neovim everything below is kickstart ahhh
+
+--end gemini code
 
 --[[
 =====================================================================
@@ -813,6 +856,10 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+
+        -- html is new
+        html = { 'djlint' },
+        htmldjango = { 'djlint' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -822,126 +869,142 @@ require('lazy').setup({
     },
   },
 
-  -- this has been replaced by other plugin from above (ray-x)
-  --
-  --{ -- Autocompletion
-  --  'saghen/blink.cmp',
-  --  event = 'VimEnter',
-  --  version = '1.*',
-  --  dependencies = {
-  --    -- Snippet Engine
-  --    {
-  --      'L3MON4D3/LuaSnip',
-  --      version = '2.*',
-  --      build = (function()
-  --        -- Build Step is needed for regex support in snippets.
-  --        -- This step is not supported in many windows environments.
-  --        -- Remove the below condition to re-enable on windows.
-  --        if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
-  --          return
-  --        end
-  --        return 'make install_jsregexp'
-  --      end)(),
-  --      dependencies = {
-  --        -- `friendly-snippets` contains a variety of premade snippets.
-  --        --    See the README about individual language/framework/plugin snippets:
-  --        --    https://github.com/rafamadriz/friendly-snippets
-  --        -- {
-  --        --   'rafamadriz/friendly-snippets',
-  --        --   config = function()
-  --        --     require('luasnip.loaders.from_vscode').lazy_load()
-  --        --   end,
-  --        -- },
+  --  this has been replaced by other plugin from above (ray-x)
+
+  { -- Autocompletion
+    'saghen/blink.cmp',
+    event = 'VimEnter',
+    version = '1.*',
+    dependencies = {
+      -- Snippet Engine
+      {
+        'L3MON4D3/LuaSnip',
+        version = '2.*',
+        build = (function()
+          -- Build Step is needed for regex support in snippets.
+          -- This step is not supported in many windows environments.
+          -- Remove the below condition to re-enable on windows.
+          if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
+            return
+          end
+          return 'make install_jsregexp'
+        end)(),
+        dependencies = {
+          -- `friendly-snippets` contains a variety of premade snippets.
+          --    See the README about individual language/framework/plugin snippets:
+          --    https://github.com/rafamadriz/friendly-snippets
+          -- {
+          --   'rafamadriz/friendly-snippets',
+          --   config = function()
+          --     require('luasnip.loaders.from_vscode').lazy_load()
+          --   end,
+          -- },
+        },
+        opts = {},
+      },
+      'folke/lazydev.nvim',
+    },
+    --- @module 'blink.cmp'
+    --- @type blink.cmp.Config
+    opts = {
+      keymap = {
+        -- 'default' (recommended) for mappings similar to built-in completions
+        --   <c-y> to accept ([y]es) the completion.
+        --    This will auto-import if your LSP supports it.
+        --    This will expand snippets if the LSP sent a snippet.
+        -- 'super-tab' for tab to accept
+        -- 'enter' for enter to accept
+        -- 'none' for no mappings
+        --
+        -- For an understanding of why the 'default' preset is recommended,
+        -- you will need to read `:help ins-completion`
+        --
+        -- No, but seriously. Please read `:help ins-completion`, it is really good!
+        --
+        -- All presets have the following mappings:
+        -- <tab>/<s-tab>: move to right/left of your snippet expansion
+        -- <c-space>: Open menu or open docs if already open
+        -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
+        -- <c-e>: Hide menu
+        -- <c-k>: Toggle signature help
+        --
+        -- See :h blink-cmp-config-keymap for defining your own keymap
+        preset = 'default',
+
+        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
+        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+      },
+
+      appearance = {
+        -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
+        -- Adjusts spacing to ensure icons are aligned
+        nerd_font_variant = 'mono',
+      },
+
+      completion = {
+        -- By default, you may press `<c-space>` to show the documentation.
+        -- Optionally, set `auto_show = true` to show the documentation after a delay.
+        documentation = { auto_show = false, auto_show_delay_ms = 500 },
+      },
+
+      sources = {
+        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        providers = {
+          lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+        },
+      },
+
+      snippets = { preset = 'luasnip' },
+
+      -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
+      -- which automatically downloads a prebuilt binary when enabled.
+      --
+      -- By default, we use the Lua implementation instead, but you may enable
+      -- the rust implementation via `'prefer_rust_with_warning'`
+      --
+      -- See :h blink-cmp-config-fuzzy for more information
+      fuzzy = { implementation = 'lua' },
+
+      -- Shows a signature help window while you type arguments for a function
+      signature = { enabled = true },
+    },
+  },
+
+  --{ -- You can easily change to a different colorscheme.
+  --  -- Change the name of the colorscheme plugin below, and then
+  --  -- change the command in the config to whatever the name of that colorscheme is.
+  --  --
+  --  -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --  'folke/tokyonight.nvim',
+  --  priority = 1000, -- Make sure to load this before all the other start plugins.
+  --  config = function()
+  --    ---@diagnostic disable-next-line: missing-fields
+  --    require('tokyonight').setup {
+  --      styles = {
+  --        comments = { italic = false }, -- Disable italics in comments
   --      },
-  --      opts = {},
-  --    },
-  --    'folke/lazydev.nvim',
-  --  },
-  --  --- @module 'blink.cmp'
-  --  --- @type blink.cmp.Config
-  --  opts = {
-  --    keymap = {
-  --      -- 'default' (recommended) for mappings similar to built-in completions
-  --      --   <c-y> to accept ([y]es) the completion.
-  --      --    This will auto-import if your LSP supports it.
-  --      --    This will expand snippets if the LSP sent a snippet.
-  --      -- 'super-tab' for tab to accept
-  --      -- 'enter' for enter to accept
-  --      -- 'none' for no mappings
-  --      --
-  --      -- For an understanding of why the 'default' preset is recommended,
-  --      -- you will need to read `:help ins-completion`
-  --      --
-  --      -- No, but seriously. Please read `:help ins-completion`, it is really good!
-  --      --
-  --      -- All presets have the following mappings:
-  --      -- <tab>/<s-tab>: move to right/left of your snippet expansion
-  --      -- <c-space>: Open menu or open docs if already open
-  --      -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-  --      -- <c-e>: Hide menu
-  --      -- <c-k>: Toggle signature help
-  --      --
-  --      -- See :h blink-cmp-config-keymap for defining your own keymap
-  --      preset = 'default',
+  --    }
 
-  --      -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-  --      --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-  --    },
-
-  --    appearance = {
-  --      -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-  --      -- Adjusts spacing to ensure icons are aligned
-  --      nerd_font_variant = 'mono',
-  --    },
-
-  --    completion = {
-  --      -- By default, you may press `<c-space>` to show the documentation.
-  --      -- Optionally, set `auto_show = true` to show the documentation after a delay.
-  --      documentation = { auto_show = false, auto_show_delay_ms = 500 },
-  --    },
-
-  --    sources = {
-  --      default = { 'lsp', 'path', 'snippets', 'lazydev' },
-  --      providers = {
-  --        lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
-  --      },
-  --    },
-
-  --    snippets = { preset = 'luasnip' },
-
-  --    -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-  --    -- which automatically downloads a prebuilt binary when enabled.
-  --    --
-  --    -- By default, we use the Lua implementation instead, but you may enable
-  --    -- the rust implementation via `'prefer_rust_with_warning'`
-  --    --
-  --    -- See :h blink-cmp-config-fuzzy for more information
-  --    fuzzy = { implementation = 'lua' },
-
-  --    -- Shows a signature help window while you type arguments for a function
-  --    signature = { enabled = true },
-  --  },
+  --    -- Load the colorscheme here.
+  --    -- Like many other themes, this one has different styles, and you could load
+  --    -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --    vim.cmd.colorscheme 'tokyonight-night'
+  --  end,
   --},
-
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+  {
+    'rose-pine/neovim',
+    name = 'rose-pine',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
+      require('rose-pine').setup {
+        variant = 'auto',
+        dark_variant = 'main',
+        dim_inactive_windows = false,
+        extend_background_behind_borders = true,
       }
 
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- Load the colorscheme here
+      vim.cmd.colorscheme 'rose-pine'
     end,
   },
 
@@ -991,7 +1054,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'html', 'htmldjango', 'css' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1049,6 +1112,35 @@ require('lazy').setup({
       vim.keymap.set('n', '<C-4>', function()
         harpoon:list():select(4)
       end)
+    end,
+  },
+  --neo tree
+  {
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-tree/nvim-web-devicons', -- for file icons
+      'MunifTanjim/nui.nvim',
+    },
+    config = function()
+      require('neo-tree').setup {
+        window = {
+          mappings = {
+            ['\\'] = 'close_window',
+            -- Map 't' to open a terminal in the selected directory
+            ['t'] = function(state)
+              local node = state.tree:get_node()
+              local path = node.type == 'directory' and node:get_id() or node:get_parent_id()
+
+              vim.cmd 'botright split'
+              vim.cmd('lcd ' .. path)
+              vim.cmd 'terminal'
+              vim.cmd 'startinsert'
+            end,
+          },
+        },
+      }
     end,
   },
 
