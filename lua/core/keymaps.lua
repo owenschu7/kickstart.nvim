@@ -63,3 +63,9 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- claude - for opening terminal with current directory using :Term
+vim.api.nvim_create_user_command('Term', function()
+  local dir = vim.fn.expand '%:p:h'
+  vim.fn.system('kitty --working-directory=' .. dir .. ' &')
+end, {})
